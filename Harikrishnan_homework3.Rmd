@@ -1,0 +1,116 @@
+---
+title: "Assignment 3"
+author: "Harikrishnan Shajil"
+date: "10/10/2020"
+output: html_document
+---
+
+## Library
+
+```{r setup, include = FALSE}
+library(ggplot2)
+library(dplyr)
+library(magrittr)
+library(tidyr)
+library(RColorBrewer)
+library(scales)
+library(ggalluvial)
+library(treemapify)
+library(grid)
+```
+
+## Importing data sets
+
+```{r Import data}
+wages <- read.csv(file = "c:/Computation and Vizualization/Assignment 3/Wage by Gender in Common Jobs.csv", sep = ",", header = TRUE)
+
+occupations <- read.csv(file = "c:/Computation and Vizualization/Assignment 3/Occupations by Share.csv", sep = ",", header = TRUE)
+```
+
+## 1 - Stacked bar chart
+
+```{r Stacked bar chart}
+wages %>%
+  group_by(PUMS.Occupation) %>%
+  filter(Year == 2018) %>%
+  drop_na() %>%
+  ggplot(aes(x = reorder(PUMS.Occupation, -Average.Wage), y = Average.Wage, fill = Gender)) +
+  geom_bar(stat = "identity") +
+  xlab("Occupation") +
+  ylab("Average Wage") +
+  labs(fill = "Gender") +
+  scale_fill_manual(values = c("#ff4040", "#0e2f44")) +
+  scale_y_continuous(labels = comma) +
+  ggtitle(label = "Distribution of Average Wage by Occupation")
+```
+
+
+## 2 - Grouped bar chart
+
+```{r Grouped bar chart}
+wages %>%
+  group_by(PUMS.Occupation) %>%
+  filter(Year == 2018) %>%
+  drop_na() %>%
+  ggplot(aes(x = PUMS.Occupation, y = Average.Wage, fill = Gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  xlab("Occupation") +
+  ylab("Average Wage") +
+  labs(fill = "Gender") +
+  scale_fill_manual(values = c("#ff4040", "#0e2f44")) +
+  scale_y_continuous(labels = comma) +
+  ggtitle(label = "Distribution of Average Wage by Occupation")
+```
+
+## 3 - Heat map
+## The figure below shows a heat map with difference in population by gender for various occupations ditributed by year. The difference is computed by subtracting the count of males from females. Although, the graph provides an evidence of males and female in particular sectors. The plot is missing a proper description which lets the viewer know that the variable Difference is the difference between the number of male and females employees.
+```{r Heat map}
+wages %>%
+  group_by(PUMS.Occupation, Year, Gender) %>%
+  summarise(Count = Total.Population) %>%
+  select(PUMS.Occupation, Year, Count) %>%
+  summarise(Difference = Count[2] - Count[1]) %>%
+  ggplot(aes(x = as.character(Year), y = PUMS.Occupation, fill = Difference)) +
+  geom_tile() +
+  scale_fill_gradient2(
+    low = "blue", mid = "white",
+    high = "red", space = "Lab"
+  ) +
+  ggtitle(label = "Difference between number of Male or Female Employees") +
+  xlab(label = "Year") +
+  ylab(label = "Occupation")
+```
+
+## 4 - Alluvial chart
+
+```{r Alluvial chart}
+wages %>% ggplot(aes(axis1 = PUMS.Occupation, axis2 = Year, y = Total.Population)) +
+  scale_x_discrete(limits = c("Occupation", "Year"), expand = c(0.5, 0)) +
+  ylab("Total Population") +
+  geom_alluvium(aes(fill = Gender)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  scale_fill_manual(values = c("#ff0000", "#0e2f44")) +
+  ggtitle(label = "Flow distribution by Occupation and Gender for Years (2014 - 2018)")
+```
+
+## 5 - Tree Map
+
+```{r Tree map}
+occupations %>%
+  group_by(Major.Occupation.Group, Detailed.Occupation) %>%
+  filter(Year == 2018) %>%
+  summarise(Total = sum(Total.Population)) %>%
+  ggplot(aes(area = Total, fill = Major.Occupation.Group, subgroup = Major.Occupation.Group)) +
+  geom_treemap() +
+  geom_treemap_text(aes(label = Detailed.Occupation), fontface = "italic", colour = "white", place = "centre", grow = FALSE) +
+  scale_fill_manual(values = c("#d696bb", "#0084ff", "#44bec7", "#ffc300", "#fa3c4c")) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(
+    legend.title = element_text(size = 5),
+    legend.text = element_text(size = 5)
+  ) +
+  ggtitle(label = "Workforce Distribution by Detailed Occupation for 2018")
+```
+
